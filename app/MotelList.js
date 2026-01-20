@@ -6,6 +6,7 @@ import Stats from './components/Stats';
 import Filters from './components/Filters';
 import MotelTable from './components/MotelTable';
 import Pagination from './components/Pagination';
+import ValidateModal from './components/ValidateModal';
 
 const ITEMS_PER_PAGE = 50;
 const FILTERS_KEY = 'motel_list_filters';
@@ -13,7 +14,7 @@ const FILTERS_KEY = 'motel_list_filters';
 export default function MotelList() {
   // Avoid localStorage access during SSR
   const [filters, setFilters] = useState({
-    country: '',
+    country: [], // now an array
     status: 'all',
     search: '',
     sortBy: 'reviews_count',
@@ -40,6 +41,13 @@ export default function MotelList() {
   const [decisions, setDecisions] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredMotels, setFilteredMotels] = useState([]);
+  const [validateModalId, setValidateModalId] = useState(null);
+
+  const filteredPlaceIds = filteredMotels.map(m => m.place_id);
+
+  const updateDecisionInList = (placeId, newDecision) => {
+    setDecisions(prev => ({ ...prev, [placeId]: newDecision }));
+  };
 
   useEffect(() => {
     // Only fetch motels once on mount
@@ -127,8 +135,8 @@ export default function MotelList() {
     let filtered = [...motels];
     console.log('After spread:', filtered.length);
 
-    if (filters.country) {
-      filtered = filtered.filter(m => m.country_code === filters.country);
+    if (filters.country && filters.country.length > 0) {
+      filtered = filtered.filter(m => filters.country.includes(m.country_code));
       console.log('After country filter:', filtered.length);
     }
 
@@ -212,9 +220,14 @@ export default function MotelList() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Pass a new handler to MotelTable for row clicks
+  const handleRowClick = (placeId) => {
+    setValidateModalId(placeId);
+  };
+
   const handleValidateClick = (placeId) => {
-    const filteredPlaceIds = filteredMotels.map(m => m.place_id);
-    sessionStorage.setItem('motel_filtered_list', JSON.stringify(filteredPlaceIds));
+    // Go to the validate page as before
+    window.location.href = `/validate/${placeId}`;
   };
 
   const exportToCSV = async () => {
@@ -485,6 +498,7 @@ export default function MotelList() {
             motels={paginatedMotels} 
             decisions={decisions} 
             onValidateClick={handleValidateClick}
+            onRowClick={handleRowClick} // <-- pass the row click handler
             loading={loading}
           />
         </div>
@@ -495,6 +509,13 @@ export default function MotelList() {
           onPageChange={setCurrentPage}
         />
       </div>
+      <ValidateModal
+        placeId={validateModalId}
+        open={!!validateModalId}
+        onClose={() => setValidateModalId(null)}
+        filteredList={filteredPlaceIds}
+        updateDecisionInList={updateDecisionInList}
+      />
     </div>
   );
 }

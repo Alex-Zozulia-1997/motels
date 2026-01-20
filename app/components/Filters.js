@@ -1,6 +1,43 @@
+import { useState, useRef, useEffect } from 'react';
+
 export default function Filters({ filters, onFiltersChange, countries }) {
+  const handleCountryChange = (e) => {
+    const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+    onFiltersChange({ ...filters, country: selected });
+  };
+
+  // Custom multi-select dropdown for countries
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const dropdownRef = useRef();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setCountryDropdownOpen(false);
+      }
+    };
+    if (countryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [countryDropdownOpen]);
+
+  const handleCountryToggle = () => {
+    setCountryDropdownOpen((open) => !open);
+  };
+
+  const handleCountrySelect = (code) => {
+    let selected = filters.country || [];
+    if (selected.includes(code)) {
+      selected = selected.filter(c => c !== code);
+    } else {
+      selected = [...selected, code];
+    }
+    onFiltersChange({ ...filters, country: selected });
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div className="flex flex-wrap gap-4 items-center">
       <input
         type="text"
         placeholder="Search motels..."
@@ -9,18 +46,48 @@ export default function Filters({ filters, onFiltersChange, countries }) {
         onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
       />
 
-      <select
-        className="px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-        value={filters.country}
-        onChange={(e) => onFiltersChange({ ...filters, country: e.target.value })}
-      >
-        <option value="">All Countries</option>
-        {countries.map(code => (
-          <option key={code} value={code}>
-            {code}
-          </option>
-        ))}
-      </select>
+      <div>
+        <label className="block text-xs font-semibold mb-1">Country</label>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            className="min-w-[160px] px-2 py-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex justify-between items-center"
+            onClick={handleCountryToggle}
+          >
+            <span>
+              {(filters.country && filters.country.length > 0)
+                ? filters.country.join(', ')
+                : 'Select countries'}
+            </span>
+            <span className="ml-2 text-zinc-400">▼</span>
+          </button>
+          {countryDropdownOpen && (
+            <div className="absolute left-0 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded shadow-lg z-10">
+              {countries.map(code => (
+                <div
+                  key={code}
+                  className={`px-3 py-2 cursor-pointer flex items-center gap-2 hover:bg-purple-50 dark:hover:bg-zinc-800 ${
+                    filters.country && filters.country.includes(code)
+                      ? 'bg-purple-100 dark:bg-purple-900'
+                      : ''
+                  }`}
+                  onClick={() => handleCountrySelect(code)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.country && filters.country.includes(code)}
+                    readOnly
+                  />
+                  <span>{code}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="text-xs mt-1 text-zinc-500 dark:text-zinc-400">
+          Click to select one or more countries
+        </div>
+      </div>
 
       <select
         className="px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
