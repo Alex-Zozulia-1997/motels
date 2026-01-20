@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Stats from './components/Stats';
+import StatsModal from './components/StatsModal';
 import Filters from './components/Filters';
 import MotelTable from './components/MotelTable';
 import Pagination from './components/Pagination';
@@ -20,6 +21,7 @@ export default function MotelList() {
     sortBy: 'reviews_count',
     sortOrder: 'desc'
   });
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -121,8 +123,7 @@ export default function MotelList() {
         return [...prev, ...newMotels];
       });
     }
-        setLoading(false);
-
+    setLoading(false);
   };
 
   // Filter and sort motels whenever dependencies change
@@ -478,6 +479,12 @@ export default function MotelList() {
               <span>{filteredMotels.length}</span>
               <span>)</span>
             </button>
+             <button
+                      onClick={() => setStatsModalOpen(true)}
+                      className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                    >
+                      📊 View Charts
+                    </button>
           </div>
 
           <Stats stats={stats} />
@@ -515,6 +522,12 @@ export default function MotelList() {
         onClose={() => setValidateModalId(null)}
         filteredList={filteredPlaceIds}
         updateDecisionInList={updateDecisionInList}
+      />
+      <StatsModal
+        open={statsModalOpen}
+        onClose={() => setStatsModalOpen(false)}
+        motels={motels}
+        decisions={decisions}
       />
     </div>
   );

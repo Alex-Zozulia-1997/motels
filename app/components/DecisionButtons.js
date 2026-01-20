@@ -1,4 +1,4 @@
-export default function DecisionButtons({ decision, onDecision, onSkipToNext, onPrevious }) {
+export default function DecisionButtons({ decision, onDecision, onPrevious }) {
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6">
       <div className="flex gap-4 mb-4">
@@ -31,10 +31,14 @@ export default function DecisionButtons({ decision, onDecision, onSkipToNext, on
           ✕ Reject
         </button>
         <button
-          onClick={onSkipToNext}
-          className="flex-1 py-3 px-6 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors font-semibold"
+          onClick={() => onDecision('pending')}
+          className={`flex-1 py-3 px-6 rounded-lg transition-colors font-semibold ${
+            decision === 'pending'
+              ? 'bg-yellow-500 text-white'
+              : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/40'
+          }`}
         >
-          Skip to Next →
+          ⏳ Set Pending
         </button>
       </div>
     </div>

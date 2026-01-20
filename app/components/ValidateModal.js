@@ -111,7 +111,7 @@ export default function ValidateModal({ placeId, open, onClose, filteredList, up
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <button className="absolute top-4 right-4 text-2xl" onClick={onClose}>✕</button>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
@@ -123,14 +123,13 @@ export default function ValidateModal({ placeId, open, onClose, filteredList, up
         ) : (
           <>
             <PlaceHeader place={place} decision={decision} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-1">
               <ImageGallery images={images} placeTitle={place.title} />
               <ReviewsList reviews={reviews} />
             </div>
             <DecisionButtons
               decision={decision}
               onDecision={handleDecision}
-              onSkipToNext={null}
               onPrevious={null}
             />
           </>

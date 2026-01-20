@@ -8,7 +8,7 @@ export default function PlaceHeader({ place, decision }) {
   return (
     <>
       {/* Back button and status */}
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-1 flex justify-between items-center">
         <Link 
           href="/"
           className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium"

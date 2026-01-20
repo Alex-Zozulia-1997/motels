@@ -92,7 +92,7 @@ export default function MotelTable({ motels, decisions, onValidateClick, onRowCl
                     e.stopPropagation();
                     onValidateClick(motel.place_id);
                   }}
-                  className="px-2 py-1 bg-purple-600 text-white rounded"
+                  className="px-2 py-1 bg-purple-600 text-white rounded mr-2"
                 >
                   Validate
                 </button>

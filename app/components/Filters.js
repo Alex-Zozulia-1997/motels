@@ -47,7 +47,6 @@ export default function Filters({ filters, onFiltersChange, countries }) {
       />
 
       <div>
-        <label className="block text-xs font-semibold mb-1">Country</label>
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -63,6 +62,22 @@ export default function Filters({ filters, onFiltersChange, countries }) {
           </button>
           {countryDropdownOpen && (
             <div className="absolute left-0 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded shadow-lg z-10">
+              <div className="flex gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
+                <button
+                  type="button"
+                  className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
+                  onClick={() => onFiltersChange({ ...filters, country: countries })}
+                >
+                  All Countries
+                </button>
+                <button
+                  type="button"
+                  className="text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  onClick={() => onFiltersChange({ ...filters, country: [] })}
+                >
+                  Clear
+                </button>
+              </div>
               {countries.map(code => (
                 <div
                   key={code}
@@ -84,9 +99,7 @@ export default function Filters({ filters, onFiltersChange, countries }) {
             </div>
           )}
         </div>
-        <div className="text-xs mt-1 text-zinc-500 dark:text-zinc-400">
-          Click to select one or more countries
-        </div>
+       
       </div>
 
       <select
