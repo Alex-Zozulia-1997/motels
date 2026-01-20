@@ -58,7 +58,12 @@ export default function ImageGallery({ images, placeTitle }) {
   }
 
   const handleImageError = (index, image) => {
-    console.error('Image failed to load:', image);
+    // Only log if image object has useful info
+    if (image && (image.image_url || image.url || image.imageUrl || image.src)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Image failed to load:', image);
+      }
+    }
     setImageErrors(prev => ({ ...prev, [index]: true }));
     setImageLoading(prev => ({ ...prev, [index]: false }));
   };

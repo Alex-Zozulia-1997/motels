@@ -1,8 +1,19 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function MotelTable({ motels, decisions, onValidateClick }) {
+export default function MotelTable({ motels, decisions, onValidateClick, loading }) {
   const router = useRouter();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center">
+          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading motels...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (motels.length === 0) {
     return (

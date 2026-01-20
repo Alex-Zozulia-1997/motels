@@ -22,7 +22,7 @@ export default function ReviewsList({ reviews }) {
       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
         {reviews.map((review) => (
           <div 
-            key={review.id}
+            key={review.review_url || review.reviewer_id || review.published_at}
             className="border-b border-zinc-200 dark:border-zinc-700 pb-4 last:border-b-0"
           >
             <div className="flex justify-between items-start mb-2">

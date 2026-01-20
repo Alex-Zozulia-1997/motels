@@ -67,15 +67,15 @@ export default function MotelList() {
     if (initialError) {
       console.error('Error fetching initial motels:', initialError);
       setMotels([]);
-      setLoading(false);
+      
       return;
     }
 
     setMotels(initialData || []);
-    setLoading(false);
 
     // Fetch the rest in the background
     fetchRestMotels(initialData?.length || 0, columns);
+
   };
 
   const fetchRestMotels = async (alreadyFetched, columns) => {
@@ -113,6 +113,8 @@ export default function MotelList() {
         return [...prev, ...newMotels];
       });
     }
+        setLoading(false);
+
   };
 
   // Filter and sort motels whenever dependencies change
@@ -436,22 +438,13 @@ export default function MotelList() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400">Loading motels...</p>
-        </div>
-      </div>
-    );
-  }
+ 
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black py-6 px-4">
       <div className="max-w-7xl mx-auto relative">
         {/* Side loading spinner */}
-        {loading && (
+        { loading && (
           <div className="absolute top-6 right-6 z-50 flex flex-col items-center">
             <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-2"></div>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">Loading motels...</span>
@@ -477,16 +470,22 @@ export default function MotelList() {
           <Stats stats={stats} />
           <Filters filters={filters} onFiltersChange={setFilters} countries={countries} />
         </div>
-
+        {loading && (
+          <div className="mb-4 text-zinc-600 dark:text-zinc-400">
+            LOADING MOTELS...
+          </div>
+        )}
+        {!loading && (
         <div className="mb-4 text-zinc-600 dark:text-zinc-400">
           Showing {paginatedMotels.length} of {filteredMotels.length} motels
-        </div>
+        </div>)}
 
         <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg overflow-hidden mb-6">
           <MotelTable 
             motels={paginatedMotels} 
             decisions={decisions} 
             onValidateClick={handleValidateClick}
+            loading={loading}
           />
         </div>
 
