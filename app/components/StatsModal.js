@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import {
@@ -28,7 +27,7 @@ export default function StatsModal({ open, onClose, motels, decisions }) {
   const motelsWithDecision = useMemo(() =>
     motels.map(m => ({
       ...m,
-      decision: decisions[m.place_id] || 'pending',
+      decision: (decisions && decisions[m.place_id]) || m.decision || 'pending',
       actual_reviews_count: m.reviews_count || 0,
       actual_images_count: m.images_count || 0,
       total_score: Number(m.total_score) || 0,

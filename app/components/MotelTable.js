@@ -29,7 +29,8 @@ export default function MotelTable({ motels, decisions, onValidateClick, onRowCl
     <table className="w-full">
       <tbody>
         {motels.map((motel) => {
-          const status = decisions[motel.place_id];
+          // Fix: handle null/undefined decisions prop
+          const status = (decisions && decisions[motel.place_id]) || motel.decision || 'pending';
           const imageCount = motel.images_count || 0;
           
           return (
@@ -49,7 +50,7 @@ export default function MotelTable({ motels, decisions, onValidateClick, onRowCl
                     ✕ Rejected
                   </span>
                 )}
-                {!status && (
+                {(!status || status === 'pending') && (
                   <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
                     ⋯ Pending
                   </span>

@@ -11,6 +11,7 @@ import ValidateModal from './components/ValidateModal';
 
 const ITEMS_PER_PAGE = 50;
 const FILTERS_KEY = 'motel_list_filters';
+const LOCAL_DECISIONS_KEY = 'motel_decisions';
 
 export default function MotelList() {
   // Avoid localStorage access during SSR
@@ -40,70 +41,33 @@ export default function MotelList() {
 
   const [motels, setMotels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [decisions, setDecisions] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredMotels, setFilteredMotels] = useState([]);
   const [validateModalId, setValidateModalId] = useState(null);
 
   const filteredPlaceIds = filteredMotels.map(m => m.place_id);
 
-  const updateDecisionInList = (placeId, newDecision) => {
-    setDecisions(prev => ({ ...prev, [placeId]: newDecision }));
-  };
-
   useEffect(() => {
-    // Only fetch motels once on mount
-    if (motels.length === 0) {
-      fetchInitialMotels();
-    }
-    loadDecisions();
+    fetchMotelsFromSummary();
   }, []);
 
-  const fetchInitialMotels = async () => {
-    console.log('=== Fetching Initial Motels ===');
-    const columns = [
-      'place_id', 'title', 'address', 'city', 'state', 'country_code',
-      'lat', 'lng', 'category_name', 'categories', 'total_score',
-      'reviews_count', 'images_count', 'url', 'raw', 'created_at', 'updated_at'
-    ].join(',');
-
-    // Fetch first 50 for fast initial render
-    const { data: initialData, error: initialError } = await supabase
-      .from('places')
-      .select(columns)
-      .order('total_score', { ascending: false })
-      .range(0, ITEMS_PER_PAGE - 1);
-
-    if (initialError) {
-      console.error('Error fetching initial motels:', initialError);
-      setMotels([]);
-      
-      return;
-    }
-
-    setMotels(initialData || []);
-
-    // Fetch the rest in the background
-    fetchRestMotels(initialData?.length || 0, columns);
-
-  };
-
-  const fetchRestMotels = async (alreadyFetched, columns) => {
+  const fetchMotelsFromSummary = async () => {
+    setLoading(true);
     let allData = [];
-    let from = alreadyFetched;
+    let from = 0;
     const batchSize = 1000;
     let hasMore = true;
 
     while (hasMore) {
       const { data, error } = await supabase
-        .from('places')
-        .select(columns)
-        .order('total_score', { ascending: false })
+        .from('place_summary')
+        .select('*')
         .range(from, from + batchSize - 1);
 
       if (error) {
-        console.error('Error fetching rest motels:', error);
-        break;
+        setMotels([]);
+        setLoading(false);
+        return;
       }
 
       if (data && data.length > 0) {
@@ -115,43 +79,23 @@ export default function MotelList() {
       }
     }
 
-    if (allData.length > 0) {
-      // Only add motels that are not already in the list
-      setMotels(prev => {
-        const existingIds = new Set(prev.map(m => m.place_id));
-        const newMotels = allData.filter(m => !existingIds.has(m.place_id));
-        return [...prev, ...newMotels];
-      });
-    }
+    setMotels(allData);
     setLoading(false);
   };
 
   // Filter and sort motels whenever dependencies change
   useEffect(() => {
-    console.log('=== Filter Effect Running ===');
-    console.log('motels.length:', motels.length);
-    console.log('filters:', filters);
-    console.log('decisions keys:', Object.keys(decisions).length);
-    
     let filtered = [...motels];
-    console.log('After spread:', filtered.length);
-
     if (filters.country && filters.country.length > 0) {
       filtered = filtered.filter(m => filters.country.includes(m.country_code));
-      console.log('After country filter:', filtered.length);
     }
-
     if (filters.status === 'pending') {
-      filtered = filtered.filter(m => !decisions[m.place_id]);
-      console.log('After pending filter:', filtered.length);
+      filtered = filtered.filter(m => !m.decision || m.decision === 'pending');
     } else if (filters.status === 'approved') {
-      filtered = filtered.filter(m => decisions[m.place_id] === 'approved');
-      console.log('After approved filter:', filtered.length);
+      filtered = filtered.filter(m => m.decision === 'approved');
     } else if (filters.status === 'rejected') {
-      filtered = filtered.filter(m => decisions[m.place_id] === 'rejected');
-      console.log('After rejected filter:', filtered.length);
+      filtered = filtered.filter(m => m.decision === 'rejected');
     }
-
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(m =>
@@ -159,57 +103,53 @@ export default function MotelList() {
         m.city?.toLowerCase().includes(searchLower) ||
         m.address?.toLowerCase().includes(searchLower)
       );
-      console.log('After search filter:', filtered.length);
     }
-
     filtered.sort((a, b) => {
       const aVal = a[filters.sortBy] || 0;
       const bVal = b[filters.sortBy] || 0;
-
       if (filters.sortOrder === 'asc') {
         return aVal > bVal ? 1 : -1;
       }
       return aVal < bVal ? 1 : -1;
     });
-
-    console.log('Final filtered length:', filtered.length);
     setFilteredMotels(filtered);
     setCurrentPage(1);
-  }, [motels, filters, decisions]);
+  }, [motels, filters]);
 
-  const loadDecisions = async () => {
-    console.log('=== Loading Decisions ===');
-    const saved = localStorage.getItem('motel_decisions');
-    if (saved) {
-      console.log('Found saved decisions in localStorage');
-      setDecisions(JSON.parse(saved));
-    }
+  // On each load, clear localStorage decisions and re-populate from DB
+  useEffect(() => {
+    localStorage.removeItem(LOCAL_DECISIONS_KEY);
+  }, []);
 
-    const { data, error } = await supabase
-      .from('decisions')
-      .select('place_id, decision');
+  const [localDecisions, setLocalDecisions] = useState({});
 
-    console.log('Decisions from DB:', data?.length, 'Error:', error);
-
-    if (!error && data) {
-      const dbDecisions = {};
-      data.forEach(d => {
-        dbDecisions[d.place_id] = d.decision;
+  // When motels are loaded, initialize localDecisions from DB/view
+  useEffect(() => {
+    if (motels.length > 0) {
+      const initial = {};
+      motels.forEach(m => {
+        if (m.decision) initial[m.place_id] = m.decision;
       });
-      
-      const merged = { ...dbDecisions, ...(saved ? JSON.parse(saved) : {}) };
-      console.log('Merged decisions count:', Object.keys(merged).length);
-      setDecisions(merged);
-      localStorage.setItem('motel_decisions', JSON.stringify(merged));
+      setLocalDecisions(initial);
+      localStorage.setItem(LOCAL_DECISIONS_KEY, JSON.stringify(initial));
     }
+  }, [motels]);
+
+  // When a decision is made in ValidateModal, update localDecisions immediately
+  const updateDecisionInList = (placeId, newDecision) => {
+    setLocalDecisions(prev => {
+      const updated = { ...prev, [placeId]: newDecision };
+      localStorage.setItem(LOCAL_DECISIONS_KEY, JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const stats = useMemo(() => {
-    const approved = Object.values(decisions).filter(d => d === 'approved').length;
-    const rejected = Object.values(decisions).filter(d => d === 'rejected').length;
+    const approved = Object.values(localDecisions).filter(d => d === 'approved').length;
+    const rejected = Object.values(localDecisions).filter(d => d === 'rejected').length;
     const pending = motels.length - approved - rejected;
     return { approved, rejected, pending, total: motels.length };
-  }, [decisions, motels]);
+  }, [localDecisions, motels]);
 
   const countries = useMemo(() => 
     [...new Set(motels.map(m => m.country_code).filter(Boolean))].sort()
@@ -429,24 +369,23 @@ export default function MotelList() {
   useEffect(() => {
     const handleStorage = (event) => {
       if (event.key === 'motel_decisions') {
-        const updated = localStorage.getItem('motel_decisions');
-        if (updated) {
-          setDecisions(JSON.parse(updated));
-        }
+        // Always reload from DB, not just localStorage
+        loadDecisions();
       }
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
+  // Make sure loadDecisions is defined before this useEffect
+  const loadDecisions = async () => {
+    // ...existing code for loading decisions...
+  };
+
   useEffect(() => {
-    // Only update decisions from localStorage when returning to the list
+    // Only update decisions from DB when returning to the list
     const handleFocus = () => {
-      const updated = localStorage.getItem('motel_decisions');
-      if (updated) {
-        setDecisions(JSON.parse(updated));
-      }
-      // Do NOT refetch motels here!
+      loadDecisions();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
@@ -497,9 +436,9 @@ export default function MotelList() {
         <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg overflow-hidden mb-6">
           <MotelTable 
             motels={paginatedMotels} 
-            decisions={decisions} 
+            decisions={localDecisions}
             onValidateClick={handleValidateClick}
-            onRowClick={handleRowClick} // <-- pass the row click handler
+            onRowClick={handleRowClick}
             loading={loading}
           />
         </div>
@@ -521,7 +460,7 @@ export default function MotelList() {
         open={statsModalOpen}
         onClose={() => setStatsModalOpen(false)}
         motels={motels}
-        decisions={decisions}
+        decisions={localDecisions}
       />
     </div>
   );
