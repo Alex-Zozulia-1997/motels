@@ -456,14 +456,8 @@ export default function MotelList() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black py-6 px-4">
-      <div className="max-w-7xl mx-auto relative">
-        {/* Side loading spinner */}
-        { loading && (
-          <div className="absolute top-6 right-6 z-50 flex flex-col items-center">
-            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">Loading motels...</span>
-          </div>
-        )}
+      <div className="max-w-8xl mx-auto relative">
+    
 
         <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6 mb-6">
           <div className="flex justify-between items-center mb-6">
