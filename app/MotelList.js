@@ -151,6 +151,14 @@ export default function MotelList() {
     return { approved, rejected, pending, total: motels.length };
   }, [localDecisions, motels]);
 
+  const filteredStats = useMemo(() => {
+    const filteredPlaceIds = filteredMotels.map(m => m.place_id);
+    const approved = filteredPlaceIds.filter(id => localDecisions[id] === 'approved').length;
+    const rejected = filteredPlaceIds.filter(id => localDecisions[id] === 'rejected').length;
+    const pending = filteredMotels.length - approved - rejected;
+    return { approved, rejected, pending, total: filteredMotels.length };
+  }, [filteredMotels, localDecisions]);
+
   const countries = useMemo(() => 
     [...new Set(motels.map(m => m.country_code).filter(Boolean))].sort()
   , [motels]);
@@ -420,7 +428,11 @@ export default function MotelList() {
                     </button>
           </div>
 
-          <Stats stats={stats} />
+          <Stats 
+        stats={stats} 
+        filteredStats={filteredStats}
+        hasCountryFilter={filters.country && filters.country.length > 0}
+      />
           <Filters filters={filters} onFiltersChange={setFilters} countries={countries} />
         </div>
         {loading && (
